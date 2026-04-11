@@ -18,7 +18,8 @@
 //It is lacking heirachial information and its much less descriptively powerfull than .usd or .gltf
 void Parse(Render_World& world,int& width,int& height,const char* test_file)
 {
-    FILE* F = fopen(test_file,"r");
+    std::string input_path = "input/" + std::string(test_file);
+    FILE* F = fopen(input_path.c_str(),"r");
     if(!F)
     {
         std::cout<<"Failed to open file '"<<test_file<<"'\n";

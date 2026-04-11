@@ -6,7 +6,7 @@
 #include <string>
 #include <cstring>
 #include <cstdio>
-#include <direct.h>
+#include <filesystem>
 
 typedef unsigned int Pixel;
 
@@ -121,7 +121,7 @@ bool Read_ppm(Pixel *&data, int &width, int &height, const char *filename)
 void Dump_ppm(Pixel *data, int width, int height, const char *filename)
 {
     std::string dump_folder = "./output";
-    mkdir(dump_folder.c_str());
+    std::filesystem::create_directories(dump_folder);
 
     std::string dump_path = dump_folder + "/" + std::string(filename);
     std::ofstream file(dump_path, std::ios::binary);
