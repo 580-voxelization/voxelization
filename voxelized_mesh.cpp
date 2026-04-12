@@ -14,6 +14,8 @@ void VoxelizedMesh::Voxelize()
 
 void VoxelizedMesh::Read_Obj(const char* file)
 {
+    mesh.Read_Obj(file);
+    Voxelize();
 }
 
 Box VoxelizedMesh::Bounding_Box(int part) const

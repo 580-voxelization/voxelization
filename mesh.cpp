@@ -10,7 +10,8 @@ static const double weight_tolerance = 1e-4;
 // Read in a mesh from an obj file.  Populates the bounding box and registers
 // one part per triangle (by setting number_parts). Given.
 void Mesh::Read_Obj(const char *file) {
-    std::ifstream fin(file);
+    std::string obj_path = "./input/obj/" + std::string(file);
+    std::ifstream fin(obj_path.c_str());
     if (!fin) {
         exit(EXIT_FAILURE);
     }
@@ -37,7 +38,7 @@ void Mesh::Read_Obj(const char *file) {
 // Check for an intersection against the ray.  See the base class for details.
 Hit Mesh::Intersection(const Ray &ray, int part) const {
 
-    TODO; //implement Mesh+ray Intersection
+//    TODO; //implement Mesh+ray Intersection
     Hit hit = {nullptr, 0.0, part};
     if (part < 0) {
         double min_t = std::numeric_limits<double>::max();
