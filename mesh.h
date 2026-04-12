@@ -11,6 +11,7 @@ class Mesh : public Object
 {
     std::vector<vec3> vertices;
     std::vector<ivec3> triangles;
+
     Box box;
     
 public:
@@ -22,5 +23,7 @@ public:
     bool Intersect_Triangle(const Ray& ray, int tri, double& dist) const;
     void Read_Obj(const char* file);
     Box Bounding_Box(int part) const override;
+
+    friend class VoxelizedMesh;
 };
 #endif
