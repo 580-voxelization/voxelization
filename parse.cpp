@@ -82,9 +82,9 @@ void Parse(Render_World &world, int &width, int &height, const char *test_file)
         }
         else if (item == "voxelized_mesh")
         {
-            ss >> s0 >> mat;
+            ss >> f0 >> s0 >> mat;
             assert(ss);
-            VoxelizedMesh *o = new VoxelizedMesh;
+            VoxelizedMesh *o = new VoxelizedMesh(f0);
             o->Read_Obj(s0.c_str());
             finish_parse_object(o);
         }
