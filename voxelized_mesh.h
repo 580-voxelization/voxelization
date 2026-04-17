@@ -11,7 +11,9 @@ class VoxelizedMesh : public Object
     Mesh mesh;
 
     Box box;
-    
+
+    double Distance_To_Triangle(vec3& point, int part) const;
+
 public:
     VoxelizedMesh()
     {}
