@@ -10,6 +10,7 @@
 #include "render_world.h"
 #include "sphere.h"
 #include "voxelized_mesh.h"
+#include "random_shader.h"
 #include <map>
 #include <sstream>
 #include <string>
@@ -95,6 +96,12 @@ void Parse(Render_World &world, int &width, int &height, const char *test_file)
             std::map<std::string, vec3>::const_iterator c0 = colors.find(s0);
             assert(c0 != colors.end());
             shaders[name] = new Flat_Shader(world, c0->second);
+        }
+        else if (item == "random_shader")
+        {
+            ss >> name;
+            assert(ss);
+            shaders[name] = new Random_Shader(world);
         }
         else if (item == "phong_shader")
         {
