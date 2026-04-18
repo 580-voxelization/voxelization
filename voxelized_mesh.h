@@ -13,13 +13,15 @@ class VoxelizedMesh : public Object
     Box box;
     
 public:
-    VoxelizedMesh()
-    {}
+    VoxelizedMesh() : voxel_size(0.0f) {}
+
 
     virtual Hit Intersection(const Ray& ray, int part) const override;
     virtual vec3 Normal(const vec3& point, int part) const override;
     void Voxelize();
     void Read_Obj(const char* file);
     Box Bounding_Box(int part) const override;
+
+    void Set_Voxel_Size(float vs) { voxel_size = vs; }
 };
 #endif
