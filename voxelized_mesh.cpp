@@ -17,7 +17,90 @@ vec3 VoxelizedMesh::Normal(const vec3 &point, int part) const
 
 void VoxelizedMesh::Voxelize()
 {
+    voxels.clear();
+
+    if (mesh.vertices.empty() || mesh.triangles.empty())
+    {
+        return;
+    }
+
+    box.Make_Empty();
+    for (const vec3 &v : mesh.vertices)
+    {
+        box.Include_Point(v);
+    }
+
+    const double eps = 1e-9;
+    box.lo -= vec3(eps, eps, eps);
+    box.hi += vec3(eps, eps, eps);
+
+    int nx = (int)std::ceil((box.hi[0] - box.lo[0]) / voxel_size);
+    int ny = (int)std::ceil((box.hi[1] - box.lo[1]) / voxel_size);
+    int nz = (int)std::ceil((box.hi[2] - box.lo[2]) / voxel_size);
+
+    auto clampi = [](int v, int lo, int hi) -> int
+    {
+        return std::max(lo, std::min(v, hi));
+    };
+
     const double distance_threshold = sqrt(3) * voxel_size;
+
+    auto index = [=](int x, int y, int z) -> int
+    {
+        return x + nx * (y + ny * z);
+    };
+
+    std::vector<unsigned char> occupied((size_t)nx * ny * nz, 0);
+
+    for (int part = 0; part < (int)mesh.triangles.size(); ++part)
+    {
+        Box tri_box = Bounding_Box(part);
+
+        int x0 = (int)std::floor((tri_box.lo[0] - box.lo[0]) / voxel_size);
+        int y0 = (int)std::floor((tri_box.lo[1] - box.lo[1]) / voxel_size);
+        int z0 = (int)std::floor((tri_box.lo[2] - box.lo[2]) / voxel_size);
+
+        int x1 = (int)std::floor((tri_box.hi[0] - box.lo[0]) / voxel_size);
+        int y1 = (int)std::floor((tri_box.hi[1] - box.lo[1]) / voxel_size);
+        int z1 = (int)std::floor((tri_box.hi[2] - box.lo[2]) / voxel_size);
+
+        x0 = clampi(x0, 0, nx - 1);
+        y0 = clampi(y0, 0, ny - 1);
+        z0 = clampi(z0, 0, nz - 1);
+
+        x1 = clampi(x1, 0, nx - 1);
+        y1 = clampi(y1, 0, ny - 1);
+        z1 = clampi(z1, 0, nz - 1);
+
+        for (int z = z0; z <= z1; ++z)
+        for (int y = y0; y <= y1; ++y)
+        for (int x = x0; x <= x1; ++x)
+        {
+            vec3 voxel_lo = box.lo + vec3(x * voxel_size, y * voxel_size, z * voxel_size);
+            vec3 center = voxel_lo + vec3(0.5 * voxel_size, 0.5 * voxel_size, 0.5 * voxel_size);
+
+            vec3 p = center;
+            double d = Distance_To_Triangle(p, part);
+
+            if (d <= distance_threshold)
+            {
+                occupied[(size_t)index(x, y, z)] = 1;
+            }
+        }
+    }
+
+    voxels.reserve((size_t)nx * ny * nz);
+    for (int z = 0; z < nz; ++z)
+    for (int y = 0; y < ny; ++y)
+    for (int x = 0; x < nx; ++x)
+    {
+        if (occupied[(size_t)index(x, y, z)])
+        {
+            voxels.push_back(box.lo + vec3(x * voxel_size, y * voxel_size, z * voxel_size));
+        }
+    }
+
+
 
 }
 
@@ -29,6 +112,18 @@ void VoxelizedMesh::Read_Obj(const char *file)
 
 Box VoxelizedMesh::Bounding_Box(int part) const
 {
+    ivec3 triangle = mesh.triangles[part];
+
+    const vec3 &a = mesh.vertices[triangle[0]];
+    const vec3 &b = mesh.vertices[triangle[1]];
+    const vec3 &c = mesh.vertices[triangle[2]];
+
+    Box tri_box;
+    tri_box.Make_Empty();
+    tri_box.Include_Point(a);
+    tri_box.Include_Point(b);
+    tri_box.Include_Point(c);
+    return tri_box;
 }
 
 
