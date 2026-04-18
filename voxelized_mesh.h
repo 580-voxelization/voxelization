@@ -11,6 +11,9 @@ class VoxelizedMesh : public Object
     Mesh mesh;
 
     Box box;
+    
+public:
+    VoxelizedMesh() : voxel_size(0.0f) {}
 
     double Distance_To_Triangle(vec3 &point, int part) const;
 
@@ -28,6 +31,8 @@ public:
     void Read_Obj(const char *file);
 
     Box Bounding_Box(int part) const override;
+
+    void Set_Voxel_Size(float vs) { voxel_size = vs; }
 };
 
 #endif
