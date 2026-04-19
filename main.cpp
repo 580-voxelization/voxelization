@@ -215,12 +215,13 @@ int main(int argc, char **argv)
     const char *solution_file = 0;
     const char *input_file = 0;
     const char *statistics_file = 0;
+    const char *destination_file = 0;
     int test_x = -1, test_y = -1;
 
     // Parse commandline options
     while (1)
     {
-        int opt = getopt(argc, argv, "s:i:m:o:x:y:h");
+        int opt = getopt(argc, argv, "s:i:m:o:d:x:y:h");
         if (opt == -1) break;
         switch (opt)
         {
@@ -232,6 +233,9 @@ int main(int argc, char **argv)
                 break;
             case 'o':
                 statistics_file = optarg;
+                break;
+            case 'd':
+                destination_file = optarg;
                 break;
             case 'x':
                 test_x = atoi(optarg);
@@ -272,7 +276,7 @@ int main(int argc, char **argv)
     }
 
     // Save the rendered image to disk
-    Dump_ppm(world.camera.colors, width, height, "output.ppm");
+    Dump_ppm(world.camera.colors, width, height, destination_file);
 
     // If a solution is specified, compare against it.
     if (solution_file)
