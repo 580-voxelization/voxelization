@@ -1,8 +1,9 @@
 size 640 480
 color white 1 1 1
 color black 0 0 0
-phong_shader white_shader white white white 50
-voxelized_mesh 0.2 obj0.obj white_shader
+random_shader random_shader 25
+voxelized_mesh 0.1 obj1.obj random_shader
+voxelized_mesh 0.15 obj2.obj random_shader
 point_light .8 .8 4 white 100
 ambient_light white .3
 enable_shadows 0
