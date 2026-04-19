@@ -7,17 +7,22 @@
 
 vec3 Phong_Shader::
 Shade_Surface(const Ray &ray, const vec3 &intersection_point,
-              const vec3 &normal, int recursion_depth) const {
+              const vec3 &normal, int recursion_depth, const Hit &hit) const
+{
     vec3 color;
 
 //    TODO; //calculate the phong ambient + diffuse + specular
     color += color_ambient * world.ambient_intensity * world.ambient_color;
-    for (Light *light: world.lights) {
+    for (Light *light: world.lights)
+    {
         vec3 vector_to_light = light->position - intersection_point;
-        if (world.enable_shadows) {
-            Ray shadow_ray = Ray(intersection_point + small_t * vector_to_light.normalized(), vector_to_light.normalized());
+        if (world.enable_shadows)
+        {
+            Ray shadow_ray = Ray(intersection_point + small_t * vector_to_light.normalized(),
+                                 vector_to_light.normalized());
             Hit shadow_hit = world.Closest_Intersection(shadow_ray);
-            if (shadow_hit.object && shadow_hit.dist < vector_to_light.magnitude()) {
+            if (shadow_hit.object && shadow_hit.dist < vector_to_light.magnitude())
+            {
                 continue;
             }
         }

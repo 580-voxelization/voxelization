@@ -69,9 +69,9 @@ vec3 Render_World::Cast_Ray(const Ray &ray, int recursion_depth) {
         Shader *shader = hit.object->material_shader;
         vec3 intersection_point = ray.endpoint + ray.direction * hit.dist;
         vec3 normal = hit.object->  Normal(intersection_point, hit.part);
-        color = shader->Shade_Surface(ray, intersection_point, normal, recursion_depth);
+        color = shader->Shade_Surface(ray, intersection_point, normal, recursion_depth, hit);
     } else {
-        color = background_shader->Shade_Surface(ray, vec3(0, 0, 0), vec3(0, 0, 0), recursion_depth);
+        color = background_shader->Shade_Surface(ray, vec3(0, 0, 0), vec3(0, 0, 0), recursion_depth, hit);
     }
 
     return color;

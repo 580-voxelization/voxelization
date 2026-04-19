@@ -28,6 +28,7 @@ void Parse(Render_World &world, int &width, int &height, const char *test_file)
         exit(EXIT_FAILURE);
     }
 
+    int i0;
     double f0;
     char buff[1000];
     vec3 u, v, w;
@@ -99,9 +100,9 @@ void Parse(Render_World &world, int &width, int &height, const char *test_file)
         }
         else if (item == "random_shader")
         {
-            ss >> name;
+            ss >> name >> i0;
             assert(ss);
-            shaders[name] = new Random_Shader(world);
+            shaders[name] = new Random_Shader(world, i0);
         }
         else if (item == "phong_shader")
         {

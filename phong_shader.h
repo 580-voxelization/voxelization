@@ -20,6 +20,6 @@ public:
     {}
 
     virtual vec3 Shade_Surface(const Ray& ray,const vec3& intersection_point,
-        const vec3& normal,int recursion_depth) const override;
+        const vec3& normal, int recursion_depth, const Hit &hit) const override;
 };
 #endif
