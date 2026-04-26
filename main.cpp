@@ -219,20 +219,20 @@ void Dump_png(Pixel *data, int width, int height, const char *filename);
 
 void Read_png(Pixel *&data, int &width, int &height, const char *filename);
 
-std::vector<VoxelizedMesh*> Get_Voxelized_Meshes(Render_World& world)
+std::vector<Voxelized_Mesh*> Get_Voxelized_Meshes(Render_World& world)
 {
-    std::vector<VoxelizedMesh*> vmeshes;
+    std::vector<Voxelized_Mesh*> vmeshes;
     for (Object* obj : world.objects)
     {
-        VoxelizedMesh* vm = dynamic_cast<VoxelizedMesh*>(obj);
+        Voxelized_Mesh* vm = dynamic_cast<Voxelized_Mesh*>(obj);
         if (vm) vmeshes.push_back(vm);
     }
     return vmeshes;
 }
 
-void Apply_BVH_Setting(const std::vector<VoxelizedMesh*>& vmeshes, bool enabled)
+void Apply_BVH_Setting(const std::vector<Voxelized_Mesh*>& vmeshes, bool enabled)
 {
-    for (VoxelizedMesh* vm : vmeshes) vm->Set_BVH_Enabled(enabled);
+    for (Voxelized_Mesh* vm : vmeshes) vm->Set_BVH_Enabled(enabled);
 }
 
 int main(int argc, char **argv)
@@ -286,14 +286,14 @@ int main(int argc, char **argv)
 
     // Parse test scene file
     Parse(world, width, height, input_file);
-    std::vector<VoxelizedMesh*> vmeshes = Get_Voxelized_Meshes(world);
+    std::vector<Voxelized_Mesh*> vmeshes = Get_Voxelized_Meshes(world);
     Apply_BVH_Setting(vmeshes, world.enable_bvh);
 
     if (benchmark_mode)
     {
         int total_voxels = 0;
         int total_bvh_nodes = 0;
-        for (VoxelizedMesh* vm : vmeshes) {
+        for (Voxelized_Mesh* vm : vmeshes) {
             total_voxels += vm->Voxel_Count();
             total_bvh_nodes += vm->BVH_Node_Count();
         }

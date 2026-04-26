@@ -5,6 +5,7 @@
 #include <atomic>
 
 class Voxel_Uniform_Shader;
+class Voxel_Frame_Shader;
 
 struct BVH_Node
 {
@@ -79,6 +80,7 @@ public:
     long long Get_Intersection_Tests() const { return intersection_tests.load(); }
 
     friend Voxel_Uniform_Shader;
+    friend Voxel_Frame_Shader;
 };
 
 #endif

@@ -1,10 +1,13 @@
 size 640 480
 random_shader random_shader 25
 color white 1 1 1
+color frame_color 1 0 0
 phong_shader white_shader white white white 50
 voxel_uniform_shader uniform_shader white_shader
-voxelized_mesh 0.15 0 test_obj.obj uniform_shader
+voxel_frame_shader frame_shader 0.08 frame_color uniform_shader
+voxelized_mesh 0.15 0 test_obj.obj frame_shader
 point_light 0 4 0 white 100
 ambient_light white .3
 enable_shadows 0
+enable_bvh 0
 camera 4 4 7 0 0 0 0 1 0 70
