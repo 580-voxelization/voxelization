@@ -1,6 +1,9 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <cassert>
+#include <cstdlib>
+#include <iostream>
 #include "flat_shader.h"
 #include "mesh.h"
 #include "phong_shader.h"
@@ -12,9 +15,6 @@
 #include "voxelized_mesh.h"
 #include "voxel_uniform_shader.h"
 #include "random_shader.h"
-#include <map>
-#include <sstream>
-#include <string>
 
 
 //This ray-tracer uses a custom scene file format that is human readable
@@ -168,6 +168,11 @@ void Parse(Render_World &world, int &width, int &height, const char *test_file)
         else if (item == "enable_shadows")
         {
             ss >> world.enable_shadows;
+            assert(ss);
+        }
+        else if (item == "enable_bvh")
+        {
+            ss >> world.enable_bvh;
             assert(ss);
         }
         else if (item == "recursion_depth_limit")

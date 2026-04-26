@@ -47,8 +47,9 @@ int Voxelized_Mesh::Build_BVH(int start, int count)
     // Compute bounding box
     node.bbox.Make_Empty();
     for (int i = start; i < start + count; i++) {
-        node.bbox.Include_Point(voxels[i]);
-        node.bbox.Include_Point(voxels[i] + vec3(voxel_size, voxel_size, voxel_size));
+        int voxel_index = bvh_voxel_indices[i];
+        node.bbox.Include_Point(voxels[voxel_index]);
+        node.bbox.Include_Point(voxels[voxel_index] + vec3(voxel_size, voxel_size, voxel_size));
     }
 
     // Leaf threshold: 4 voxels or fewer
@@ -64,10 +65,12 @@ int Voxelized_Mesh::Build_BVH(int start, int count)
     if (extent[1] > extent[0]) axis = 1;
     if (extent[2] > extent[axis]) axis = 2;
 
-    // Sort voxels along this axis (by center coordinate)
+    // Sort BVH indices along this axis, preserving the original voxel order.
     double vs = voxel_size;
-    std::sort(voxels.begin() + start, voxels.begin() + start + count,
-        [axis, vs](const vec3& a, const vec3& b) {
+    std::sort(bvh_voxel_indices.begin() + start, bvh_voxel_indices.begin() + start + count,
+        [this, axis, vs](int a_index, int b_index) {
+            const vec3& a = voxels[a_index];
+            const vec3& b = voxels[b_index];
             return (a[axis] + vs * 0.5) < (b[axis] + vs * 0.5);
         });
 
@@ -101,13 +104,14 @@ void Voxelized_Mesh::BVH_Intersect(const Ray& ray, int node_idx, double& min_t, 
     if (node.Is_Leaf()) {
         // Test each voxel in this leaf
         for (int i = node.voxel_start; i < node.voxel_start + node.voxel_count; i++) {
+            int voxel_index = bvh_voxel_indices[i];
             intersection_tests++;
-            vec3 lo = voxels[i];
+            vec3 lo = voxels[voxel_index];
             vec3 hi = lo + vec3(voxel_size, voxel_size, voxel_size);
             double t;
             if (Ray_Box_Intersect(ray, lo, hi, t) && t >= small_t && t < min_t) {
                 min_t = t;
-                hit = {this, t, i};
+                hit = {this, t, voxel_index};
             }
         }
     } else {
@@ -255,6 +259,7 @@ void Voxelized_Mesh::Voxelize()
     voxels.clear();
     bvh_nodes.clear();
     voxels_to_triangles.clear();
+    bvh_voxel_indices.clear();
 
     if (mesh.vertices.empty() || mesh.triangles.empty())
     {
@@ -357,6 +362,10 @@ void Voxelized_Mesh::Voxelize()
     number_parts = (int)voxels.size();
 
     if (!voxels.empty() && bvh_enabled) {
+        bvh_voxel_indices.reserve(voxels.size());
+        for (int i = 0; i < (int)voxels.size(); i++) {
+            bvh_voxel_indices.push_back(i);
+        }
         bvh_nodes.reserve(2 * voxels.size());
         Build_BVH(0, (int)voxels.size());
     }

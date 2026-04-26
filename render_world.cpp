@@ -3,6 +3,7 @@
 #include "object.h"
 #include "light.h"
 #include "ray.h"
+#include <limits>
 
 //#include <iostream>
 //using namespace std;
@@ -11,7 +12,7 @@ extern bool disable_hierarchy;
 
 Render_World::Render_World()
         : background_shader(0), ambient_intensity(0), enable_shadows(true),
-          recursion_depth_limit(3) {}
+          enable_bvh(true), recursion_depth_limit(3) {}
 
 Render_World::~Render_World() {
     delete background_shader;

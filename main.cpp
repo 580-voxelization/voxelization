@@ -9,6 +9,10 @@
 #include <cstdio>
 #include <filesystem>
 #include <chrono>
+#include <cassert>
+#include <cmath>
+#include <cstdlib>
+#include <vector>
 
 typedef unsigned int Pixel;
 
@@ -215,6 +219,22 @@ void Dump_png(Pixel *data, int width, int height, const char *filename);
 
 void Read_png(Pixel *&data, int &width, int &height, const char *filename);
 
+std::vector<VoxelizedMesh*> Get_Voxelized_Meshes(Render_World& world)
+{
+    std::vector<VoxelizedMesh*> vmeshes;
+    for (Object* obj : world.objects)
+    {
+        VoxelizedMesh* vm = dynamic_cast<VoxelizedMesh*>(obj);
+        if (vm) vmeshes.push_back(vm);
+    }
+    return vmeshes;
+}
+
+void Apply_BVH_Setting(const std::vector<VoxelizedMesh*>& vmeshes, bool enabled)
+{
+    for (VoxelizedMesh* vm : vmeshes) vm->Set_BVH_Enabled(enabled);
+}
+
 int main(int argc, char **argv)
 {
     const char *solution_file = 0;
@@ -266,74 +286,43 @@ int main(int argc, char **argv)
 
     // Parse test scene file
     Parse(world, width, height, input_file);
+    std::vector<VoxelizedMesh*> vmeshes = Get_Voxelized_Meshes(world);
+    Apply_BVH_Setting(vmeshes, world.enable_bvh);
 
     if (benchmark_mode)
     {
         int total_voxels = 0;
         int total_bvh_nodes = 0;
-        std::vector<Voxelized_Mesh *> vmeshes;
-        for (Object *obj: world.objects)
-        {
-            Voxelized_Mesh *vm = dynamic_cast<Voxelized_Mesh *>(obj);
-            if (vm)
-            {
-                vmeshes.push_back(vm);
-                total_voxels += vm->Voxel_Count();
-                total_bvh_nodes += vm->BVH_Node_Count();
-            }
+        for (VoxelizedMesh* vm : vmeshes) {
+            total_voxels += vm->Voxel_Count();
+            total_bvh_nodes += vm->BVH_Node_Count();
         }
 
         long long total_pixels = (long long) width * height;
 
-        std::cout << "=== BVH Benchmark ===" << std::endl;
+        std::cout << "=== Voxelized Mesh Benchmark ===" << std::endl;
         std::cout << "Resolution: " << width << "x" << height
                   << " (" << total_pixels << " pixels)" << std::endl;
+        std::cout << "BVH enabled: " << (world.enable_bvh ? "true" : "false") << std::endl;
         std::cout << "Voxelized meshes: " << vmeshes.size() << std::endl;
         std::cout << "Total voxels: " << total_voxels << std::endl;
         std::cout << "Total BVH nodes: " << total_bvh_nodes << std::endl;
         std::cout << std::endl;
 
-        //Brute-force (BVH disabled)
-        for (auto *vm: vmeshes)
-        {
-            vm->Set_BVH_Enabled(false);
-            vm->Reset_Stats();
-        }
+        for (auto* vm : vmeshes) vm->Reset_Stats();
 
         auto t0 = std::chrono::high_resolution_clock::now();
         world.Render();
         auto t1 = std::chrono::high_resolution_clock::now();
 
-        double brute_ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
-        long long brute_tests = 0;
-        for (auto *vm: vmeshes) brute_tests += vm->Get_Intersection_Tests();
 
-        std::cout << "[Brute-force]  Time: " << brute_ms << " ms"
-                  << "  |  Voxel tests: " << brute_tests << std::endl;
+        double render_ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+        long long voxel_tests = 0;
+        for (auto* vm : vmeshes) voxel_tests += vm->Get_Intersection_Tests();
 
-        //BVH enabled
-        for (auto *vm: vmeshes)
-        {
-            vm->Set_BVH_Enabled(true);
-            vm->Reset_Stats();
-        }
-
-        auto t2 = std::chrono::high_resolution_clock::now();
-        world.Render();
-        auto t3 = std::chrono::high_resolution_clock::now();
-
-        double bvh_ms = std::chrono::duration<double, std::milli>(t3 - t2).count();
-        long long bvh_tests = 0;
-        for (auto *vm: vmeshes) bvh_tests += vm->Get_Intersection_Tests();
-
-        std::cout << "[BVH]          Time: " << bvh_ms << " ms"
-                  << "  |  Voxel tests: " << bvh_tests << std::endl;
-
-        double speedup = brute_ms / bvh_ms;
-        double test_reduction = 1.0 - (double) bvh_tests / brute_tests;
-        std::cout << std::endl;
-        std::cout << "Speedup: " << speedup << "x" << std::endl;
-        std::cout << "Test reduction: " << (test_reduction * 100.0) << "%" << std::endl;
+        std::cout << "[" << (world.enable_bvh ? "BVH" : "Brute-force") << "]  Time: "
+                  << render_ms << " ms"
+                  << "  |  Voxel tests: " << voxel_tests << std::endl;
 
         // Write JSON for visualization
         std::string json_path = "./output/benchmark.json";
@@ -345,12 +334,9 @@ int main(int argc, char **argv)
         jf << "  \"num_meshes\": " << vmeshes.size() << ",\n";
         jf << "  \"total_voxels\": " << total_voxels << ",\n";
         jf << "  \"total_bvh_nodes\": " << total_bvh_nodes << ",\n";
-        jf << "  \"brute_time_ms\": " << brute_ms << ",\n";
-        jf << "  \"bvh_time_ms\": " << bvh_ms << ",\n";
-        jf << "  \"brute_tests\": " << brute_tests << ",\n";
-        jf << "  \"bvh_tests\": " << bvh_tests << ",\n";
-        jf << "  \"speedup\": " << speedup << ",\n";
-        jf << "  \"test_reduction_pct\": " << (test_reduction * 100.0) << "\n";
+        jf << "  \"bvh_enabled\": " << (world.enable_bvh ? "true" : "false") << ",\n";
+        jf << "  \"render_time_ms\": " << render_ms << ",\n";
+        jf << "  \"voxel_tests\": " << voxel_tests << "\n";
         jf << "}\n";
         jf.close();
         std::cout << "\nBenchmark JSON written to " << json_path << std::endl;

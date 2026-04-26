@@ -2,7 +2,10 @@
 .vscode/
 
 cmake-build-debug/
+build/
 
 output/
 
 *.DS_Store
+
+ray_tracer

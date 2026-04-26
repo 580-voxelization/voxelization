@@ -28,6 +28,7 @@ class Voxelized_Mesh : public Object
 
 
     std::vector<BVH_Node> bvh_nodes;
+    std::vector<int> bvh_voxel_indices;
     bool bvh_enabled;
 
     int Build_BVH(int start, int count);
