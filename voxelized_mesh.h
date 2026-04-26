@@ -3,19 +3,20 @@
 
 #include "mesh.h"
 #include <atomic>
+#include "voxel_uniform_shader.h"
 
 struct BVH_Node
 {
     Box bbox;
-    int left;    
-    int right;    
-    int voxel_start; 
+    int left;
+    int right;
+    int voxel_start;
     int voxel_count;
 
     bool Is_Leaf() const { return left == -1; }
 };
 
-class VoxelizedMesh : public Object
+class Voxelized_Mesh : public Object
 {
     double voxel_size;
     std::vector<vec3> voxels;
@@ -23,7 +24,7 @@ class VoxelizedMesh : public Object
     Mesh mesh;
 
     Box box;
-    
+
 
     std::vector<BVH_Node> bvh_nodes;
     bool bvh_enabled;
@@ -31,23 +32,25 @@ class VoxelizedMesh : public Object
     int Build_BVH(int start, int count);
 
     // Traverse BVH to find closest ray-voxel intersection
-    void BVH_Intersect(const Ray& ray, int node_idx, double& min_t, Hit& hit) const;
+    void BVH_Intersect(const Ray &ray, int node_idx, double &min_t, Hit &hit) const;
 
-    bool Triangle_Box_Intersect(int tri_idx, const vec3& lo, const vec3& hi) const;
+    bool Triangle_Box_Intersect(int tri_idx, const vec3 &lo, const vec3 &hi) const;
 
     mutable std::atomic<long long> intersection_tests;
+
+    bool sat_enabled = true;
 
 public:
     Box Triangle_Bounding_Box(int triangle_index) const;
 
-    double Distance_To_Triangle(vec3 &point, int part) const;
+    double Distance_To_Triangle(vec3 &point, int mesh_part, vec3 &target_point) const;
 
-    bool use_sat = true;  // true = SAT，false = distance
 
 public:
-    VoxelizedMesh() : voxel_size(0.0f), bvh_enabled(true), intersection_tests(0) {}
+    Voxelized_Mesh() : voxel_size(0.0f), bvh_enabled(false), intersection_tests(0) {}
 
-    VoxelizedMesh(double voxel_size) : voxel_size(voxel_size), bvh_enabled(true), intersection_tests(0)
+    Voxelized_Mesh(double voxel_size, bool sat_enabled) : voxel_size(voxel_size), bvh_enabled(false),
+                                                          sat_enabled(sat_enabled), intersection_tests(0)
     {
     }
 
@@ -65,13 +68,15 @@ public:
 
     void Set_BVH_Enabled(bool enabled) { bvh_enabled = enabled; }
 
-    int Voxel_Count() const { return (int)voxels.size(); }
+    int Voxel_Count() const { return (int) voxels.size(); }
 
-    int BVH_Node_Count() const { return (int)bvh_nodes.size(); }
+    int BVH_Node_Count() const { return (int) bvh_nodes.size(); }
 
     void Reset_Stats() const { intersection_tests = 0; }
 
     long long Get_Intersection_Tests() const { return intersection_tests.load(); }
+
+    friend Voxel_Uniform_Shader;
 };
 
 #endif

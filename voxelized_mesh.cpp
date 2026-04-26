@@ -37,7 +37,7 @@ static const double bary_weight_tolerance = 1e-4;
 
 // Build BVH recursively
 // Returns index of the root node created
-int VoxelizedMesh::Build_BVH(int start, int count)
+int Voxelized_Mesh::Build_BVH(int start, int count)
 {
     BVH_Node node;
     node.left = node.right = -1;
@@ -81,13 +81,13 @@ int VoxelizedMesh::Build_BVH(int start, int count)
 
     bvh_nodes[my_idx].left  = left_idx;
     bvh_nodes[my_idx].right = right_idx;
-    bvh_nodes[my_idx].voxel_start = -1; 
+    bvh_nodes[my_idx].voxel_start = -1;
     bvh_nodes[my_idx].voxel_count = 0;
 
     return my_idx;
 }
 
-void VoxelizedMesh::BVH_Intersect(const Ray& ray, int node_idx, double& min_t, Hit& hit) const
+void Voxelized_Mesh::BVH_Intersect(const Ray& ray, int node_idx, double& min_t, Hit& hit) const
 {
     const BVH_Node& node = bvh_nodes[node_idx];
 
@@ -126,7 +126,7 @@ void VoxelizedMesh::BVH_Intersect(const Ray& ray, int node_idx, double& min_t, H
     }
 }
 
-Hit VoxelizedMesh::Intersection(const Ray &ray, int part) const
+Hit Voxelized_Mesh::Intersection(const Ray &ray, int part) const
 {
     Hit hit = {nullptr, 0.0, part};
 
@@ -165,7 +165,7 @@ Hit VoxelizedMesh::Intersection(const Ray &ray, int part) const
     return hit;
 }
 
-vec3 VoxelizedMesh::Normal(const vec3 &point, int part) const
+vec3 Voxelized_Mesh::Normal(const vec3 &point, int part) const
 {
     vec3 lo = voxels[part];
     vec3 hi = lo + vec3(voxel_size, voxel_size, voxel_size);
@@ -203,9 +203,9 @@ static bool Axis_Test(const vec3& axis,
     return true;
 }
 
-bool VoxelizedMesh::Triangle_Box_Intersect(int tri_idx,
-                                           const vec3& lo,
-                                           const vec3& hi) const
+bool Voxelized_Mesh::Triangle_Box_Intersect(int tri_idx,
+                                            const vec3& lo,
+                                            const vec3& hi) const
 {
     ivec3 tri = mesh.triangles[tri_idx];
     vec3 v0 = mesh.vertices[tri[0]];
@@ -250,7 +250,7 @@ bool VoxelizedMesh::Triangle_Box_Intersect(int tri_idx,
     return true;
 }
 
-void VoxelizedMesh::Voxelize()
+void Voxelized_Mesh::Voxelize()
 {
     voxels.clear();
     bvh_nodes.clear();
@@ -317,23 +317,16 @@ void VoxelizedMesh::Voxelize()
                     vec3 voxel_lo = box.lo + vec3(x * voxel_size, y * voxel_size, z * voxel_size);
                     vec3 center = voxel_lo + vec3(0.5 * voxel_size, 0.5 * voxel_size, 0.5 * voxel_size);
 
-                    // vec3 p = center;
-                    // double d = Distance_To_Triangle(p, part);
-
-                    // if (d <= distance_threshold)
-                    // {
-                    //     occupied[(size_t) index(x, y, z)] = 1;
-                    // }
                     vec3 voxel_hi = voxel_lo + vec3(voxel_size, voxel_size, voxel_size);
                     size_t idx = (size_t) index(x, y, z);
 
                     bool hit = false;
 
-                    if (use_sat) {
+                    if (sat_enabled) {
                         hit = Triangle_Box_Intersect(part, voxel_lo, voxel_hi);
                     } else {
-                        vec3 p = center;
-                        double d = Distance_To_Triangle(p, part);
+                        vec3 p = center, target_point;
+                        double d = Distance_To_Triangle(p, part, target_point);
                         hit = (d <= distance_threshold);
                     }
 
@@ -354,26 +347,28 @@ void VoxelizedMesh::Voxelize()
 
                 if (!voxel_triangles[idx].empty())
                 {
-                    voxels.push_back(box.lo + vec3(x * voxel_size, y * voxel_size, z * voxel_size));
+                    vec3 voxel_lo = box.lo + vec3(x * voxel_size, y * voxel_size, z * voxel_size);
+
+                    voxels.push_back(voxel_lo);
                     voxels_to_triangles.push_back(voxel_triangles[idx]);
                 }
             }
 
     number_parts = (int)voxels.size();
 
-    if (!voxels.empty()) {
+    if (!voxels.empty() && bvh_enabled) {
         bvh_nodes.reserve(2 * voxels.size());
         Build_BVH(0, (int)voxels.size());
     }
 }
 
-void VoxelizedMesh::Read_Obj(const char *file)
+void Voxelized_Mesh::Read_Obj(const char *file)
 {
     mesh.Read_Obj(file);
     Voxelize();
 }
 
-Box VoxelizedMesh::Bounding_Box(int part) const
+Box Voxelized_Mesh::Bounding_Box(int part) const
 {
     if (part >= 0 && part < (int)voxels.size())
     {
@@ -386,7 +381,7 @@ Box VoxelizedMesh::Bounding_Box(int part) const
     return box;
 }
 
-Box VoxelizedMesh::Triangle_Bounding_Box(int triangle_index) const
+Box Voxelized_Mesh::Triangle_Bounding_Box(int triangle_index) const
 {
     ivec3 triangle = mesh.triangles[triangle_index];
 
@@ -403,11 +398,11 @@ Box VoxelizedMesh::Triangle_Bounding_Box(int triangle_index) const
 }
 
 
-double VoxelizedMesh::Distance_To_Triangle(vec3 &point, int part) const
+double Voxelized_Mesh::Distance_To_Triangle(vec3 &point, int mesh_part, vec3 &target_point) const
 {
-    vec3 normal = mesh.Normal(vec3(), part);
+    vec3 normal = mesh.Normal(vec3(), mesh_part);
 
-    ivec3 triangle = mesh.triangles[part];
+    ivec3 triangle = mesh.triangles[mesh_part];
     vec3 tri_vertices[3] = {mesh.vertices[triangle[0]],
                             mesh.vertices[triangle[1]],
                             mesh.vertices[triangle[2]]};
@@ -427,6 +422,7 @@ double VoxelizedMesh::Distance_To_Triangle(vec3 &point, int part) const
         weights[2] > -bary_weight_tolerance)
     {
         // distance to a point within the triangle
+        target_point = plane_projected_point;
         return (plane_projected_point - point).magnitude();
     }
 
@@ -447,6 +443,7 @@ double VoxelizedMesh::Distance_To_Triangle(vec3 &point, int part) const
 
         if (distance_to_edge < min_distance_to_edge)
         {
+            target_point = edge_projected_point;
             min_distance_to_edge = distance_to_edge;
         }
     }

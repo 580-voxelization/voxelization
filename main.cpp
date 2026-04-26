@@ -256,9 +256,6 @@ int main(int argc, char **argv)
                 benchmark_mode = true;
                 disable_hierarchy = true; // benchmark handles its own acceleration
                 break;
-            case 't':
-                use_sat = (atoi(optarg) != 0);
-                break;
         }
     }
     if (!input_file) Usage(argv[0]);
@@ -269,28 +266,24 @@ int main(int argc, char **argv)
 
     // Parse test scene file
     Parse(world, width, height, input_file);
-    for (Object* obj : world.objects) {
-        VoxelizedMesh* vm = dynamic_cast<VoxelizedMesh*>(obj);
-        if (vm) {
-            vm->use_sat = use_sat;
-        }
-    }
 
     if (benchmark_mode)
     {
         int total_voxels = 0;
         int total_bvh_nodes = 0;
-        std::vector<VoxelizedMesh*> vmeshes;
-        for (Object* obj : world.objects) {
-            VoxelizedMesh* vm = dynamic_cast<VoxelizedMesh*>(obj);
-            if (vm) {
+        std::vector<Voxelized_Mesh *> vmeshes;
+        for (Object *obj: world.objects)
+        {
+            Voxelized_Mesh *vm = dynamic_cast<Voxelized_Mesh *>(obj);
+            if (vm)
+            {
                 vmeshes.push_back(vm);
                 total_voxels += vm->Voxel_Count();
                 total_bvh_nodes += vm->BVH_Node_Count();
             }
         }
 
-        long long total_pixels = (long long)width * height;
+        long long total_pixels = (long long) width * height;
 
         std::cout << "=== BVH Benchmark ===" << std::endl;
         std::cout << "Resolution: " << width << "x" << height
@@ -301,7 +294,11 @@ int main(int argc, char **argv)
         std::cout << std::endl;
 
         //Brute-force (BVH disabled)
-        for (auto* vm : vmeshes) { vm->Set_BVH_Enabled(false); vm->Reset_Stats(); }
+        for (auto *vm: vmeshes)
+        {
+            vm->Set_BVH_Enabled(false);
+            vm->Reset_Stats();
+        }
 
         auto t0 = std::chrono::high_resolution_clock::now();
         world.Render();
@@ -309,13 +306,17 @@ int main(int argc, char **argv)
 
         double brute_ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
         long long brute_tests = 0;
-        for (auto* vm : vmeshes) brute_tests += vm->Get_Intersection_Tests();
+        for (auto *vm: vmeshes) brute_tests += vm->Get_Intersection_Tests();
 
         std::cout << "[Brute-force]  Time: " << brute_ms << " ms"
                   << "  |  Voxel tests: " << brute_tests << std::endl;
 
         //BVH enabled
-        for (auto* vm : vmeshes) { vm->Set_BVH_Enabled(true); vm->Reset_Stats(); }
+        for (auto *vm: vmeshes)
+        {
+            vm->Set_BVH_Enabled(true);
+            vm->Reset_Stats();
+        }
 
         auto t2 = std::chrono::high_resolution_clock::now();
         world.Render();
@@ -323,13 +324,13 @@ int main(int argc, char **argv)
 
         double bvh_ms = std::chrono::duration<double, std::milli>(t3 - t2).count();
         long long bvh_tests = 0;
-        for (auto* vm : vmeshes) bvh_tests += vm->Get_Intersection_Tests();
+        for (auto *vm: vmeshes) bvh_tests += vm->Get_Intersection_Tests();
 
         std::cout << "[BVH]          Time: " << bvh_ms << " ms"
                   << "  |  Voxel tests: " << bvh_tests << std::endl;
 
         double speedup = brute_ms / bvh_ms;
-        double test_reduction = 1.0 - (double)bvh_tests / brute_tests;
+        double test_reduction = 1.0 - (double) bvh_tests / brute_tests;
         std::cout << std::endl;
         std::cout << "Speedup: " << speedup << "x" << std::endl;
         std::cout << "Test reduction: " << (test_reduction * 100.0) << "%" << std::endl;

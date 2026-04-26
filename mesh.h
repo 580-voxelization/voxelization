@@ -24,6 +24,6 @@ public:
     void Read_Obj(const char* file);
     Box Bounding_Box(int part) const override;
 
-    friend class VoxelizedMesh;
+    friend class Voxelized_Mesh;
 };
 #endif

@@ -10,6 +10,7 @@
 #include "render_world.h"
 #include "sphere.h"
 #include "voxelized_mesh.h"
+#include "voxel_uniform_shader.h"
 #include "random_shader.h"
 #include <map>
 #include <sstream>
@@ -84,9 +85,9 @@ void Parse(Render_World &world, int &width, int &height, const char *test_file)
         }
         else if (item == "voxelized_mesh")
         {
-            ss >> f0 >> s0 >> mat;
+            ss >> f0 >> i0 >> s0 >> mat;
             assert(ss);
-            VoxelizedMesh *o = new VoxelizedMesh(f0);
+            Voxelized_Mesh *o = new Voxelized_Mesh(f0, i0);
             o->Read_Obj(s0.c_str());
             finish_parse_object(o);
         }
@@ -97,6 +98,14 @@ void Parse(Render_World &world, int &width, int &height, const char *test_file)
             std::map<std::string, vec3>::const_iterator c0 = colors.find(s0);
             assert(c0 != colors.end());
             shaders[name] = new Flat_Shader(world, c0->second);
+        }
+        else if (item == "voxel_uniform_shader")
+        {
+            ss >> name >> s0;
+            assert(ss);
+            std::map<std::string, Shader *>::const_iterator sh = shaders.find(s0);
+            assert(sh != shaders.end());
+            shaders[name] = new Voxel_Uniform_Shader(world, sh->second);
         }
         else if (item == "random_shader")
         {

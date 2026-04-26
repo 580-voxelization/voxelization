@@ -2,7 +2,8 @@ size 640 480
 random_shader random_shader 25
 color white 1 1 1
 phong_shader white_shader white white white 50
-voxelized_mesh 0.15 0 test_obj.obj random_shader
+voxel_uniform_shader uniform_shader white_shader
+voxelized_mesh 0.15 0 test_obj.obj uniform_shader
 point_light 0 4 0 white 100
 ambient_light white .3
 enable_shadows 0
