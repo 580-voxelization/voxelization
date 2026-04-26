@@ -19,9 +19,11 @@ class VoxelizedMesh : public Object
 {
     double voxel_size;
     std::vector<vec3> voxels;
+    std::vector<std::vector<int>> voxels_to_triangles;
     Mesh mesh;
 
     Box box;
+    bool use_sat = true;  // true = SAT，false = distance
 
     std::vector<BVH_Node> bvh_nodes;
     bool bvh_enabled;
@@ -30,6 +32,8 @@ class VoxelizedMesh : public Object
 
     // Traverse BVH to find closest ray-voxel intersection
     void BVH_Intersect(const Ray& ray, int node_idx, double& min_t, Hit& hit) const;
+
+    bool Triangle_Box_Intersect(int tri_idx, const vec3& lo, const vec3& hi) const;
 
     mutable std::atomic<long long> intersection_tests;
 

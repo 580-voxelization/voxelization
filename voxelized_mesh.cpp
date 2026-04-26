@@ -182,10 +182,79 @@ vec3 VoxelizedMesh::Normal(const vec3 &point, int part) const
     return n;
 }
 
+static bool Axis_Test(const vec3& axis,
+                      const vec3& v0, const vec3& v1, const vec3& v2,
+                      const vec3& h)
+{
+    double p0 = dot(v0, axis);
+    double p1 = dot(v1, axis);
+    double p2 = dot(v2, axis);
+
+    double min_p = std::min(p0, std::min(p1, p2));
+    double max_p = std::max(p0, std::max(p1, p2));
+
+    double r = h[0] * std::abs(axis[0]) +
+               h[1] * std::abs(axis[1]) +
+               h[2] * std::abs(axis[2]);
+
+    if (min_p > r || max_p < -r)
+        return false;
+
+    return true;
+}
+
+bool VoxelizedMesh::Triangle_Box_Intersect(int tri_idx,
+                                           const vec3& lo,
+                                           const vec3& hi) const
+{
+    ivec3 tri = mesh.triangles[tri_idx];
+    vec3 v0 = mesh.vertices[tri[0]];
+    vec3 v1 = mesh.vertices[tri[1]];
+    vec3 v2 = mesh.vertices[tri[2]];
+
+    vec3 c = (lo + hi) * 0.5;
+    vec3 h = (hi - lo) * 0.5;
+
+    v0 -= c;
+    v1 -= c;
+    v2 -= c;
+
+    vec3 e0 = v1 - v0;
+    vec3 e1 = v2 - v1;
+    vec3 e2 = v0 - v2;
+
+    vec3 axes[9] = {
+        cross(e0, vec3(1,0,0)), cross(e0, vec3(0,1,0)), cross(e0, vec3(0,0,1)),
+        cross(e1, vec3(1,0,0)), cross(e1, vec3(0,1,0)), cross(e1, vec3(0,0,1)),
+        cross(e2, vec3(1,0,0)), cross(e2, vec3(0,1,0)), cross(e2, vec3(0,0,1))
+    };
+
+    for (int i = 0; i < 9; i++) {
+        if (axes[i].magnitude() < 1e-12) continue;
+        if (!Axis_Test(axes[i], v0, v1, v2, h))
+            return false;
+    }
+
+    for (int i = 0; i < 3; i++) {
+        double min_v = std::min(v0[i], std::min(v1[i], v2[i]));
+        double max_v = std::max(v0[i], std::max(v1[i], v2[i]));
+
+        if (min_v > h[i] || max_v < -h[i])
+            return false;
+    }
+
+    vec3 normal = cross(e0, e1);
+    if (!Axis_Test(normal, v0, v1, v2, h))
+        return false;
+
+    return true;
+}
+
 void VoxelizedMesh::Voxelize()
 {
     voxels.clear();
     bvh_nodes.clear();
+    voxels_to_triangles.clear();
 
     if (mesh.vertices.empty() || mesh.triangles.empty())
     {
@@ -218,7 +287,8 @@ void VoxelizedMesh::Voxelize()
         return x + nx * (y + ny * z);
     };
 
-    std::vector<unsigned char> occupied((size_t) nx * ny * nz, 0);
+    // std::vector<unsigned char> occupied((size_t) nx * ny * nz, 0);
+    std::vector<std::vector<int>> voxel_triangles((size_t) nx * ny * nz);
 
     for (int part = 0; part < (int)mesh.triangles.size(); ++part)
     {
@@ -247,24 +317,45 @@ void VoxelizedMesh::Voxelize()
                     vec3 voxel_lo = box.lo + vec3(x * voxel_size, y * voxel_size, z * voxel_size);
                     vec3 center = voxel_lo + vec3(0.5 * voxel_size, 0.5 * voxel_size, 0.5 * voxel_size);
 
-                    vec3 p = center;
-                    double d = Distance_To_Triangle(p, part);
+                    // vec3 p = center;
+                    // double d = Distance_To_Triangle(p, part);
 
-                    if (d <= distance_threshold)
-                    {
-                        occupied[(size_t) index(x, y, z)] = 1;
+                    // if (d <= distance_threshold)
+                    // {
+                    //     occupied[(size_t) index(x, y, z)] = 1;
+                    // }
+                    vec3 voxel_hi = voxel_lo + vec3(voxel_size, voxel_size, voxel_size);
+                    size_t idx = (size_t) index(x, y, z);
+
+                    bool hit = false;
+
+                    if (use_sat) {
+                        hit = Triangle_Box_Intersect(part, voxel_lo, voxel_hi);
+                    } else {
+                        vec3 p = center;
+                        double d = Distance_To_Triangle(p, part);
+                        hit = (d <= distance_threshold);
+                    }
+
+                    if (hit) {
+                        voxel_triangles[idx].push_back(part);
                     }
                 }
     }
 
     voxels.reserve((size_t) nx * ny * nz);
+    voxels_to_triangles.reserve((size_t) nx * ny * nz);
+
     for (int z = 0; z < nz; ++z)
         for (int y = 0; y < ny; ++y)
             for (int x = 0; x < nx; ++x)
             {
-                if (occupied[(size_t) index(x, y, z)])
+                size_t idx = (size_t) index(x, y, z);
+
+                if (!voxel_triangles[idx].empty())
                 {
                     voxels.push_back(box.lo + vec3(x * voxel_size, y * voxel_size, z * voxel_size));
+                    voxels_to_triangles.push_back(voxel_triangles[idx]);
                 }
             }
 
