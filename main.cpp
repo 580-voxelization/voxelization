@@ -198,6 +198,9 @@ bool debug_pixel = false;
 // this, as it will make debugging your hierarchy much easier.
 bool disable_hierarchy = false;
 
+// True: intersection-based. False: distance-based.
+bool use_sat = true;
+
 void Usage(const char *exec)
 {
     std::cerr << "Usage: " << exec
@@ -224,7 +227,7 @@ int main(int argc, char **argv)
     // Parse commandline options
     while (1)
     {
-        int opt = getopt(argc, argv, "s:i:m:o:d:x:y:hb");
+        int opt = getopt(argc, argv, "s:i:m:o:d:x:y:hbt:");
         if (opt == -1) break;
         switch (opt)
         {
@@ -253,6 +256,9 @@ int main(int argc, char **argv)
                 benchmark_mode = true;
                 disable_hierarchy = true; // benchmark handles its own acceleration
                 break;
+            case 't':
+                use_sat = (atoi(optarg) != 0);
+                break;
         }
     }
     if (!input_file) Usage(argv[0]);
@@ -263,6 +269,12 @@ int main(int argc, char **argv)
 
     // Parse test scene file
     Parse(world, width, height, input_file);
+    for (Object* obj : world.objects) {
+        VoxelizedMesh* vm = dynamic_cast<VoxelizedMesh*>(obj);
+        if (vm) {
+            vm->use_sat = use_sat;
+        }
+    }
 
     if (benchmark_mode)
     {

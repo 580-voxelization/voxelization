@@ -23,7 +23,7 @@ class VoxelizedMesh : public Object
     Mesh mesh;
 
     Box box;
-    bool use_sat = true;  // true = SAT，false = distance
+    
 
     std::vector<BVH_Node> bvh_nodes;
     bool bvh_enabled;
@@ -41,6 +41,8 @@ public:
     Box Triangle_Bounding_Box(int triangle_index) const;
 
     double Distance_To_Triangle(vec3 &point, int part) const;
+
+    bool use_sat = true;  // true = SAT，false = distance
 
 public:
     VoxelizedMesh() : voxel_size(0.0f), bvh_enabled(true), intersection_tests(0) {}
