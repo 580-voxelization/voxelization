@@ -7,3 +7,5 @@ build/
 output/
 
 *.DS_Store
+
+ray_tracer
