@@ -2,12 +2,16 @@
 #define __VOXEL_UNIFORM_SHADER_H__
 
 #include <algorithm>
+#include <map>
 #include "shader.h"
+#include "voxelized_mesh.h"
 
 class Voxel_Uniform_Shader : public Shader
 {
 public:
     Shader *shader;
+    mutable std::map<const Voxelized_Mesh *, std::vector<vec3>> color_caches;
+    mutable std::map<const Voxelized_Mesh *, std::vector<bool>> color_cache_valid;
 
     Voxel_Uniform_Shader(Render_World &world_input, Shader *shader_input)
             : Shader(world_input), shader(shader_input) {}

@@ -8,6 +8,18 @@ Shade_Surface(const Ray &ray, const vec3 &intersection_point,
               const vec3 &normal, int recursion_depth, const Hit &hit) const
 {
     const Voxelized_Mesh *voxelized_mesh = dynamic_cast<const Voxelized_Mesh *>(hit.object);
+    if (color_caches.count(voxelized_mesh) == 0)
+    {
+        color_caches[voxelized_mesh] = std::vector<vec3>();
+        color_cache_valid[voxelized_mesh] = std::vector<bool>();
+        color_caches[voxelized_mesh].resize(voxelized_mesh->voxels.size());
+        color_cache_valid[voxelized_mesh].resize(voxelized_mesh->voxels.size());
+    }
+    if (color_cache_valid[voxelized_mesh][hit.part])
+    {
+        return color_caches[voxelized_mesh][hit.part];
+    }
+
     std::vector<int> triangle_indices = voxelized_mesh->voxels_to_triangles[hit.part];
     vec3 center = voxelized_mesh->voxels[hit.part] +
                   vec3(voxelized_mesh->voxel_size, voxelized_mesh->voxel_size, voxelized_mesh->voxel_size) / 2;
@@ -34,5 +46,7 @@ Shade_Surface(const Ray &ray, const vec3 &intersection_point,
 
     vec3 color = shader->Shade_Surface(modified_ray, closest_mesh_point, mesh_normal, recursion_depth, hit);
 
+    color_caches[voxelized_mesh][hit.part] = color;
+    color_cache_valid[voxelized_mesh][hit.part] = true;
     return color;
 }

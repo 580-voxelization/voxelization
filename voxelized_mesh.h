@@ -3,7 +3,8 @@
 
 #include "mesh.h"
 #include <atomic>
-#include "voxel_uniform_shader.h"
+
+class Voxel_Uniform_Shader;
 
 struct BVH_Node
 {
