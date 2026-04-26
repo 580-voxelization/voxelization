@@ -1,4 +1,5 @@
 #include "render_world.h"
+#include "voxelized_mesh.h"
 #include "object.h"
 #include <iostream>
 #include <fstream>
@@ -7,6 +8,7 @@
 #include <cstring>
 #include <cstdio>
 #include <filesystem>
+#include <chrono>
 
 typedef unsigned int Pixel;
 
@@ -217,11 +219,12 @@ int main(int argc, char **argv)
     const char *statistics_file = 0;
     const char *destination_file = 0;
     int test_x = -1, test_y = -1;
+    bool benchmark_mode = false;
 
     // Parse commandline options
     while (1)
     {
-        int opt = getopt(argc, argv, "s:i:m:o:d:x:y:h");
+        int opt = getopt(argc, argv, "s:i:m:o:d:x:y:hb");
         if (opt == -1) break;
         switch (opt)
         {
@@ -246,6 +249,10 @@ int main(int argc, char **argv)
             case 'h':
                 disable_hierarchy = true;
                 break;
+            case 'b':
+                benchmark_mode = true;
+                disable_hierarchy = true; // benchmark handles its own acceleration
+                break;
         }
     }
     if (!input_file) Usage(argv[0]);
@@ -257,8 +264,94 @@ int main(int argc, char **argv)
     // Parse test scene file
     Parse(world, width, height, input_file);
 
-    // Render the image
+    if (benchmark_mode)
+    {
+        int total_voxels = 0;
+        int total_bvh_nodes = 0;
+        std::vector<VoxelizedMesh*> vmeshes;
+        for (Object* obj : world.objects) {
+            VoxelizedMesh* vm = dynamic_cast<VoxelizedMesh*>(obj);
+            if (vm) {
+                vmeshes.push_back(vm);
+                total_voxels += vm->Voxel_Count();
+                total_bvh_nodes += vm->BVH_Node_Count();
+            }
+        }
+
+        long long total_pixels = (long long)width * height;
+
+        std::cout << "=== BVH Benchmark ===" << std::endl;
+        std::cout << "Resolution: " << width << "x" << height
+                  << " (" << total_pixels << " pixels)" << std::endl;
+        std::cout << "Voxelized meshes: " << vmeshes.size() << std::endl;
+        std::cout << "Total voxels: " << total_voxels << std::endl;
+        std::cout << "Total BVH nodes: " << total_bvh_nodes << std::endl;
+        std::cout << std::endl;
+
+        //Brute-force (BVH disabled)
+        for (auto* vm : vmeshes) { vm->Set_BVH_Enabled(false); vm->Reset_Stats(); }
+
+        auto t0 = std::chrono::high_resolution_clock::now();
+        world.Render();
+        auto t1 = std::chrono::high_resolution_clock::now();
+
+        double brute_ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+        long long brute_tests = 0;
+        for (auto* vm : vmeshes) brute_tests += vm->Get_Intersection_Tests();
+
+        std::cout << "[Brute-force]  Time: " << brute_ms << " ms"
+                  << "  |  Voxel tests: " << brute_tests << std::endl;
+
+        //BVH enabled
+        for (auto* vm : vmeshes) { vm->Set_BVH_Enabled(true); vm->Reset_Stats(); }
+
+        auto t2 = std::chrono::high_resolution_clock::now();
+        world.Render();
+        auto t3 = std::chrono::high_resolution_clock::now();
+
+        double bvh_ms = std::chrono::duration<double, std::milli>(t3 - t2).count();
+        long long bvh_tests = 0;
+        for (auto* vm : vmeshes) bvh_tests += vm->Get_Intersection_Tests();
+
+        std::cout << "[BVH]          Time: " << bvh_ms << " ms"
+                  << "  |  Voxel tests: " << bvh_tests << std::endl;
+
+        double speedup = brute_ms / bvh_ms;
+        double test_reduction = 1.0 - (double)bvh_tests / brute_tests;
+        std::cout << std::endl;
+        std::cout << "Speedup: " << speedup << "x" << std::endl;
+        std::cout << "Test reduction: " << (test_reduction * 100.0) << "%" << std::endl;
+
+        // Write JSON for visualization
+        std::string json_path = "./output/benchmark.json";
+        std::filesystem::create_directories("./output");
+        std::ofstream jf(json_path);
+        jf << "{\n";
+        jf << "  \"resolution\": \"" << width << "x" << height << "\",\n";
+        jf << "  \"total_pixels\": " << total_pixels << ",\n";
+        jf << "  \"num_meshes\": " << vmeshes.size() << ",\n";
+        jf << "  \"total_voxels\": " << total_voxels << ",\n";
+        jf << "  \"total_bvh_nodes\": " << total_bvh_nodes << ",\n";
+        jf << "  \"brute_time_ms\": " << brute_ms << ",\n";
+        jf << "  \"bvh_time_ms\": " << bvh_ms << ",\n";
+        jf << "  \"brute_tests\": " << brute_tests << ",\n";
+        jf << "  \"bvh_tests\": " << bvh_tests << ",\n";
+        jf << "  \"speedup\": " << speedup << ",\n";
+        jf << "  \"test_reduction_pct\": " << (test_reduction * 100.0) << "\n";
+        jf << "}\n";
+        jf.close();
+        std::cout << "\nBenchmark JSON written to " << json_path << std::endl;
+
+        Dump_ppm(world.camera.colors, width, height,
+                 destination_file ? destination_file : "output.ppm");
+        return 0;
+    }
+
+    auto t_start = std::chrono::high_resolution_clock::now();
     world.Render();
+    auto t_end = std::chrono::high_resolution_clock::now();
+    double render_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
+    std::cout << "Render time: " << render_ms << " ms" << std::endl;
 
     // For debugging.  Render only the pixel specified on the commandline.
     // Useful for printing out information about a single pixel.
@@ -276,7 +369,8 @@ int main(int argc, char **argv)
     }
 
     // Save the rendered image to disk
-    Dump_ppm(world.camera.colors, width, height, destination_file);
+    Dump_ppm(world.camera.colors, width, height,
+             destination_file ? destination_file : "output.ppm");
 
     // If a solution is specified, compare against it.
     if (solution_file)
@@ -319,4 +413,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
