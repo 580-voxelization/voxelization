@@ -22,6 +22,7 @@ public:
     double ambient_intensity;
 
     bool enable_shadows;
+    bool enable_bvh;
     int recursion_depth_limit;
 
     Hierarchy hierarchy;

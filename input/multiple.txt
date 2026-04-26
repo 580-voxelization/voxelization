@@ -5,4 +5,5 @@ voxelized_mesh 0.2 obj2.obj random_shader
 voxelized_mesh 0.15 obj3.obj random_shader
 voxelized_mesh 0.05 obj4.obj random_shader
 enable_shadows 0
+enable_bvh 1
 camera 0.02 0.01 5.5 0 0 0 0 1 0 70

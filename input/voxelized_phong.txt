@@ -6,4 +6,5 @@ voxelized_mesh 0.15 test_obj.obj white_shader
 point_light 0 4 0 white 100
 ambient_light white .3
 enable_shadows 0
+enable_bvh 1
 camera 4 4 7 0 0 0 0 1 0 70
