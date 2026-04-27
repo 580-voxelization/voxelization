@@ -360,6 +360,11 @@ void Voxelized_Mesh::Voxelize()
             }
 
     number_parts = (int)voxels.size();
+    box.Make_Empty();
+    for (const vec3& v : voxels) {
+        box.Include_Point(v);
+        box.Include_Point(v + vec3(voxel_size, voxel_size, voxel_size));
+    }
 
     if (!voxels.empty() && bvh_enabled) {
         bvh_voxel_indices.reserve(voxels.size());
