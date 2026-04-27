@@ -14,6 +14,7 @@
 #include "sphere.h"
 #include "voxelized_mesh.h"
 #include "voxel_uniform_shader.h"
+#include "voxel_face_uniform_shader.h"
 #include "voxel_frame_shader.h"
 #include "random_shader.h"
 
@@ -107,6 +108,14 @@ void Parse(Render_World &world, int &width, int &height, const char *test_file)
             std::map<std::string, Shader *>::const_iterator sh = shaders.find(s0);
             assert(sh != shaders.end());
             shaders[name] = new Voxel_Uniform_Shader(world, sh->second);
+        }
+        else if (item == "voxel_face_uniform_shader")
+        {
+            ss >> name >> s0;
+            assert(ss);
+            std::map<std::string, Shader *>::const_iterator sh = shaders.find(s0);
+            assert(sh != shaders.end());
+            shaders[name] = new Voxel_Face_Uniform_Shader(world, sh->second);
         }
         else if (item == "voxel_frame_shader")
         {
