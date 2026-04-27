@@ -6,7 +6,7 @@ phong_shader white_shader white white white 50
 voxel_uniform_shader uniform_shader white_shader
 voxel_face_uniform_shader face_uniform_shader white_shader
 voxel_frame_shader frame_shader 0.09 frame_color face_uniform_shader
-voxelized_mesh 0.15 0 test_obj.obj frame_shader
+voxelized_mesh 0.15 1 test_obj.obj frame_shader
 point_light 0 4 0 white 100
 ambient_light white .3
 enable_shadows 0
