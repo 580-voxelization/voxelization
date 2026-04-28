@@ -1,0 +1,15 @@
+size 640 480
+random_shader random_shader 25
+color white 1 1 1
+color frame_color 1 0 0
+phong_shader white_shader white white white 50
+voxel_uniform_shader uniform_shader white_shader
+voxel_face_uniform_shader face_uniform_shader white_shader
+voxel_frame_shader frame_shader 0.09 frame_color face_uniform_shader
+voxelized_mesh 0.01 1 cow.obj uniform_shader
+point_light .8 .8 4 white 100
+point_light .8 4 1 white 100
+ambient_light white 0.1
+enable_shadows 0
+enable_bvh 1
+camera 0.02 0.01 1 0 0 0 0 1 0 70
