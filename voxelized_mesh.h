@@ -70,7 +70,17 @@ public:
 
     void Set_Voxel_Size(float vs) { voxel_size = vs; }
 
-    void Set_BVH_Enabled(bool enabled) { bvh_enabled = enabled; }
+    void Set_BVH_Enabled(bool enabled) {
+        bvh_enabled = enabled;
+        if (enabled && bvh_nodes.empty() && !voxels.empty()) {
+            bvh_voxel_indices.clear();
+            bvh_voxel_indices.reserve(voxels.size());
+            for (int i = 0; i < (int)voxels.size(); i++)
+                bvh_voxel_indices.push_back(i);
+            bvh_nodes.reserve(2 * voxels.size());
+            Build_BVH(0, (int)voxels.size());
+        }
+    }
 
     int Voxel_Count() const { return (int) voxels.size(); }
 
