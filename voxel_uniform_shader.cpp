@@ -24,27 +24,25 @@ Shade_Surface(const Ray &ray, const vec3 &intersection_point,
     vec3 center = voxelized_mesh->voxels[hit.part] +
                   vec3(voxelized_mesh->voxel_size, voxelized_mesh->voxel_size, voxelized_mesh->voxel_size) / 2;
 
-    int closest_triangle_index = -1;
-    double min_distance;
-    vec3 closest_mesh_point;
+    vec3 accumulated_color;
+    double accumulated_weight;
     for (int index: triangle_indices)
     {
         vec3 target_point;
         double distance = voxelized_mesh->Distance_To_Triangle(center, index, target_point);
-        if (closest_triangle_index == -1 || distance < min_distance)
-        {
-            closest_triangle_index = index;
-            min_distance = distance;
-            closest_mesh_point = target_point;
-        }
+        double weight = 1 / distance * distance;
+
+        vec3 mesh_normal = voxelized_mesh->mesh.Normal(target_point, index);
+
+        Ray modified_ray = ray;
+        modified_ray.direction = (target_point - ray.endpoint).normalized();
+
+        vec3 color = shader->Shade_Surface(modified_ray, target_point, mesh_normal, recursion_depth, hit);
+        accumulated_color += color * weight;
+        accumulated_weight += weight;
     }
 
-    vec3 mesh_normal = voxelized_mesh->mesh.Normal(closest_mesh_point, closest_triangle_index);
-
-    Ray modified_ray = ray;
-    modified_ray.direction = (closest_mesh_point - ray.endpoint).normalized();
-
-    vec3 color = shader->Shade_Surface(modified_ray, closest_mesh_point, mesh_normal, recursion_depth, hit);
+    vec3 color = accumulated_color /= accumulated_weight;
 
     color_caches[voxelized_mesh][hit.part] = color;
     color_cache_valid[voxelized_mesh][hit.part] = true;
