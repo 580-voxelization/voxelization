@@ -174,7 +174,7 @@ void Parse(Render_World &world, int &width, int &height, const char *test_file)
             ss >> u >> v >> w >> f0;
             assert(ss);
             world.camera.Position_And_Aim_Camera(u, v, w);
-            world.camera.Focus_Camera(1, (double) width / height, f0 * (pi / 180));
+            world.camera.Focus_Camera(0.1, (double) width / height, f0 * (pi / 180));
         }
         else if (item == "background")
         {
